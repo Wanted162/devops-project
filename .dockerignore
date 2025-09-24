@@ -1,0 +1,12 @@
+# Ignore Git files
+.git
+.gitignore
+
+# Ignore Docker files
+docker-compose.yml
+Dockerfile
+*.md
+
+# Ignore local dev stuff
+node_modules
+npm-debug.log

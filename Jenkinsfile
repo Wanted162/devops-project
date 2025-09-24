@@ -2,34 +2,26 @@ pipeline {
     agent any
 
     environment {
-        DOCKER_HUB_DEV = "pranit162/devops-project-dev"
-        DOCKER_HUB_PROD = "pranit162/devops-project-prod"
-        GITHUB_CREDENTIALS = 'github-creds'
-        DOCKER_CREDENTIALS = 'docker-creds'
+        DOCKERHUB_CREDENTIALS = credentials('docker-creds')
+        GITHUB_CREDENTIALS = credentials('github-creds')
+        DEV_REPO = "pranit162/devops-project-dev"
+        PROD_REPO = "pranit162/devops-project-prod"
     }
 
     stages {
-        stage('Checkout') {
-            steps {
-                git branch: "${env.BRANCH_NAME}",
-                    credentialsId: "${GITHUB_CREDENTIALS}",
-                    url: 'https://github.com/Wanted162/devops-project.git'
-            }
-        }
-
         stage('Build & Push Docker Image') {
             steps {
                 script {
-                    // Choose image based on branch
-                    def imageName = (env.BRANCH_NAME == 'dev') ? "${DOCKER_HUB_DEV}:latest" : "${DOCKER_HUB_PROD}:latest"
+                    // Determine which repo to use
+                    def repo = (env.BRANCH_NAME == 'master') ? PROD_REPO : DEV_REPO
 
-                    withCredentials([usernamePassword(credentialsId: "${DOCKER_CREDENTIALS}", usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
-                        sh """
-                          echo "$DOCKER_PASS" | docker login -u "$DOCKER_USER" --password-stdin
-                          docker build -t ${imageName} .
-                          docker push ${imageName}
-                        """
-                    }
+                    echo "Building Docker image for branch: ${env.BRANCH_NAME}"
+                    
+                    sh """
+                        docker build -t ${repo}:${env.BUILD_NUMBER} .
+                        echo ${DOCKERHUB_CREDENTIALS_PSW} | docker login -u ${DOCKERHUB_CREDENTIALS_USR} --password-stdin
+                        docker push ${repo}:${env.BUILD_NUMBER}
+                    """
                 }
             }
         }
